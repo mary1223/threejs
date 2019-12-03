@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>hw5-3</title>
+</head>
+<body>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/109/three.min.js"></script>
+	<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+	<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/geometries/TeapotBufferGeometry.js"></script>
+	
+	<script>
+	class Teapot{
+		constructor(){
+			this.life = 500;
+			this.teapot = new THREE.Mesh(new THREE.TeapotBufferGeometry(10),new THREE.MeshPhongMaterial({transparent:true,color: 0x93C47D}));
+			this.teapot.name ="teapot";
+			this.speed = 500;
+		}
+		setposition(x,y,z){
+			this.teapot.position.set(x,y,z);
+		}
+		lose(){
+			this.life --;
+			this.speed --;
+			this.teapot.material.opacity = this.life/600;
+			this.teapot.rotation.y -= this.speed/3000;
+		}
+	}
+
+	var scene, renderer, camera;
+	var pickables = [];
+	var teapots = [];
+	var mouse = new THREE.Vector2();
+	var raycaster = new THREE.Raycaster();
+
+	init();
+	animate();
+
+	function init(){
+		var width = window.innerWidth;
+		var height = window.innerHeight;
+		renderer = new THREE.WebGLRenderer({antialias: true});	
+		renderer.setSize(width,height);
+		renderer.setClearColor(0x000000);
+		document.body.appendChild(renderer.domElement);
+
+		scene = new THREE.Scene();
+
+		camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
+		camera.position.y = 100;
+		camera.position.z = 200;
+		controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+		var pointLight = new THREE.PointLight(0xffffff);
+		pointLight.position.set(0, 300, 0);
+		scene.add(pointLight);
+		var planegeometry = new THREE.PlaneBufferGeometry( 250, 250, 32 );
+		var planematerial = new THREE.MeshPhongMaterial( {color:  0xD9EAD3, side: THREE.DoubleSide} );
+		var plane = new THREE.Mesh( planegeometry, planematerial );
+		plane.rotation.x = Math.PI/2;
+		scene.add( plane );
+		plane.name = "plane";
+		pickables.push(plane);
+		var boxgeometry = new THREE.BoxGeometry( 80, 30, 50 );
+		var boxmaterial = new THREE.MeshPhongMaterial( {color:  0xD9EAD3} );
+		var cube1 = new THREE.Mesh( boxgeometry, boxmaterial );
+		cube1.position.set(-85,5,-100);
+		scene.add( cube1 );	
+		cube1.name = "cube1";
+		pickables.push(cube1);
+		boxgeometry = new THREE.BoxGeometry( 90, 20, 250 );
+		boxmaterial = new THREE.MeshPhongMaterial( {color:  0xD9EAD3} );
+		cube2 = new THREE.Mesh( boxgeometry, boxmaterial );
+		cube2.position.set(85,10,0);
+		scene.add( cube2 );
+		cube2.name = "cube2";
+		pickables.push(cube2);
+		document.addEventListener('mousedown', onDocumentMouseDown, false);
+		document.addEventListener('mousemove', onDocumentMouseOver, false);
+	}
+	
+	function onDocumentMouseDown(event) {
+	  	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+	  	mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+	  	raycaster.setFromCamera(mouse, camera, true);
+	  	var intersects = raycaster.intersectObjects(pickables);
+	  	if (intersects.length > 0) {
+			if(intersects[0].object.name!=="teapot"){
+				var morepot = new Teapot();
+				teapots.push(morepot);
+				teapots[teapots.length-1].setposition(intersects[0].point.x,intersects[0].point.y+10,intersects[0].point.z);
+				scene.add(teapots[teapots.length-1].teapot);
+				pickables.push(teapots[teapots.length-1].teapot);
+
+			}
+	  	}
+	}
+	function onDocumentMouseOver(event) {
+	  	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+	  	mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+	  	raycaster.setFromCamera(mouse, camera);
+	  	var intersects = raycaster.intersectObjects(pickables);
+	  	if (intersects.length > 0) {
+	  		document.body.style.cursor = 'pointer';
+	  	}
+	  	else{
+			document.body.style.cursor = 'auto';
+	  	}
+	}
+	function animate(){
+		for(let i=0;i<teapots.length;i++){
+			teapots[i].lose();
+			if(teapots[i].life<0){
+				scene.remove(teapots[i].teapot);
+				teapots.splice(i,1);
+				pickables.splice(i+5,1);
+				i--;
+			}
+		}
+		requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+	}
+	</script>
+</body>
+</html>
